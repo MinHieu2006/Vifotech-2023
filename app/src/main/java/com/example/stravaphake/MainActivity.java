@@ -14,11 +14,14 @@ import android.bluetooth.BluetoothSocket;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.StrictMode;
 import android.preference.PreferenceManager;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -26,11 +29,24 @@ import android.widget.ListView;
 import android.widget.Toast;
 
 import org.osmdroid.api.IMapController;
+import org.osmdroid.bonuspack.kml.KmlDocument;
+import org.osmdroid.bonuspack.location.GeoNamesPOIProvider;
+import org.osmdroid.bonuspack.location.NominatimPOIProvider;
+import org.osmdroid.bonuspack.location.OverpassAPIProvider;
+import org.osmdroid.bonuspack.location.POI;
+import org.osmdroid.bonuspack.routing.OSRMRoadManager;
+import org.osmdroid.bonuspack.routing.Road;
+import org.osmdroid.bonuspack.routing.RoadManager;
+import org.osmdroid.bonuspack.routing.RoadNode;
 import org.osmdroid.config.Configuration;
+import org.osmdroid.events.MapEventsReceiver;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.util.PointL;
 import org.osmdroid.views.MapView;
+import org.osmdroid.views.overlay.FolderOverlay;
+import org.osmdroid.views.overlay.MapEventsOverlay;
+import org.osmdroid.views.overlay.Marker;
 import org.osmdroid.views.overlay.Polyline;
 import org.osmdroid.views.overlay.ScaleBarOverlay;
 import org.osmdroid.views.overlay.compass.CompassOverlay;
@@ -65,6 +81,10 @@ public class MainActivity extends AppCompatActivity {
     List<GeoPoint> geoPointList = new ArrayList<>();
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+        StrictMode.setThreadPolicy(policy);
+
+
         super.onCreate(savedInstanceState);
         requestBlePermissions(this,1);
         myBluetooth = BluetoothAdapter.getDefaultAdapter();
@@ -78,8 +98,7 @@ public class MainActivity extends AppCompatActivity {
 //            startActivityForResult(turnBTon, 1);
 //        }
 
-        Context ctx = getApplicationContext();
-        Configuration.getInstance().load(ctx, PreferenceManager.getDefaultSharedPreferences(ctx));
+        Configuration.getInstance().setUserAgentValue("osmbonuspack_6.9.0");
         setContentView(R.layout.activity_main);
 
         map = (MapView) findViewById(R.id.map);
@@ -90,7 +109,7 @@ public class MainActivity extends AppCompatActivity {
         IMapController mapController = map.getController();
         map.setBuiltInZoomControls(true);
         map.setMultiTouchControls(true);
-
+        RoadManager roadManager = new OSRMRoadManager(this, "osmbonuspack_6.9.0");
         // 16.064950099999997, 108.15898268465547
         LocationManager lm = (LocationManager) getSystemService(LOCATION_SERVICE);
         Location lastKnownLoc = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
@@ -101,12 +120,71 @@ public class MainActivity extends AppCompatActivity {
             mapController.setCenter(location);
             mapController.setZoom(19.5);
             geoPointList.add(location);
-            GeoPoint tmp = new GeoPoint(16.07414999116451, 108.14983845129028);
-            geoPointList.add(tmp);
-            Polyline line = new Polyline();   //see note below!
-            line.setPoints(geoPointList);
-            map.getOverlayManager().add(line);
+
+            // tìm đường đi
+            ArrayList<GeoPoint> waypoints = new ArrayList<GeoPoint>();
+            waypoints.add(location);
+            GeoPoint endPoint = new GeoPoint(16.063037876575265, 108.15760859363031);
+            waypoints.add(endPoint);
+            Road road = roadManager.getRoad(waypoints);
+            Polyline roadOverlay = RoadManager.buildRoadOverlay(road);
+
+
+            Drawable nodeIcon = getResources().getDrawable(org.osmdroid.library.R.drawable.ic_menu_compass);
+            for (int i=0; i<road.mNodes.size(); i++){
+                RoadNode node = road.mNodes.get(i);
+                Marker nodeMarker = new Marker(map);
+                nodeMarker.setPosition(node.mLocation);
+                nodeMarker.setIcon(nodeIcon);
+                nodeMarker.setTitle("Step "+i);
+                map.getOverlays().add(nodeMarker);
+            }
+
+            NominatimPOIProvider poiProvider = new NominatimPOIProvider("osmbonuspack_6.9.0");
+            ArrayList<POI> pois = poiProvider.getPOICloseTo(location, "Trường học", 50, 0.1);
+            FolderOverlay poiMarkers = new FolderOverlay(this);
+            map.getOverlays().add(poiMarkers);
+            Drawable poiIcon = getResources().getDrawable(org.osmdroid.library.R.drawable.bonuspack_bubble);
+            for (POI poi:pois){
+                Marker poiMarker = new Marker(map);
+                poiMarker.setTitle(poi.mType);
+                poiMarker.setSnippet(poi.mDescription);
+                poiMarker.setPosition(poi.mLocation);
+                poiMarker.setIcon(poiIcon);
+                if (poi.mThumbnail != null){
+                    //poiItem.setImage(new BitmapDrawable(poi.mThumbnail));
+                }
+                poiMarkers.add(poiMarker);
+
+            }
+            // click vi tri
+            MapEventsReceiver mReceive = new MapEventsReceiver() {
+                @Override
+                public boolean singleTapConfirmedHelper(GeoPoint p) {
+                    Toast.makeText(getBaseContext(),p.getLatitude() + " - "+p.getLongitude(),Toast.LENGTH_LONG).show();
+
+                    return false;
+                }
+
+                @Override
+                public boolean longPressHelper(GeoPoint p) {
+                    return false;
+                }
+            };
+
+
+            MapEventsOverlay OverlayEvents = new MapEventsOverlay(getBaseContext(), mReceive);
+            map.getOverlays().add(OverlayEvents);
+
+            //
+
+            map.getOverlays().add(roadOverlay);
+            map.invalidate();
         }
+
+
+
+
 
 
 //        IMapController mapController = map.getController();

@@ -18,6 +18,9 @@ dependencyResolutionManagement {
             mavenCentral()
             maven { url "https://jitpack.io" }
         }
+        flatDir {
+            dirs 'libs'
+        }
     }
 }
 rootProject.name = "Strava pha ke"
