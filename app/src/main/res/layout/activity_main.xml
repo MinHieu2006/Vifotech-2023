@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:mapbox="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity"
+    android:background="@color/white">
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:layout_marginTop="630dp"
+            android:layout_marginLeft="9dp"
+            android:layout_marginRight="9dp"
+            android:background="@drawable/custom_button"
+            android:text="Start"
+            android:textSize="20dp"/>
+        <org.osmdroid.views.MapView android:id="@+id/map"
+            android:layout_width="match_parent"
+            android:layout_height="530dp"
+            android:layout_marginTop="90dp"/>
+
+        <TextView
+            android:layout_width="150dp"
+            android:layout_height="80dp"
+            android:layout_marginLeft="30dp"
+            android:layout_marginTop="710dp"
+            android:background="@drawable/border_txt" />
+        <TextView
+            android:layout_width="150dp"
+            android:layout_height="80dp"
+            android:layout_marginLeft="230dp"
+            android:layout_marginTop="710dp"
+            android:background="@drawable/border_txt" />
+    </RelativeLayout>
+</RelativeLayout>

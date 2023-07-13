@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Strava pha ke</string>
+    <string name="mapbox_access_token">"sk.eyJ1IjoibjFwaHVjbHEiLCJhIjoiY2xqeTRibTMwMDFpNDNmcXI4eW5oa2w4OCJ9.aZVCVBYsrYANmgaxwj9Rsg"</string>
+</resources>
