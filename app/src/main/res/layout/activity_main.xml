@@ -10,32 +10,39 @@
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent">
+        <EditText
+            android:id="@+id/search_bar"
+            android:layout_width="300dp"
+            android:layout_height="60dp"
+            android:hint="Tìm địa điểm"
+            android:textColor="@color/black"/>
+        <ImageButton
+            android:id="@+id/search_destination"
+            android:layout_width="40dp"
+            android:layout_height="33dp"
+            android:background="@drawable/search"
+            android:alpha="0.4"
+            android:scaleType="fitXY"
+            android:layout_marginLeft="310dp"
+            android:layout_marginTop="8dp"/>
 
         <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/tracking"
             android:layout_width="match_parent"
             android:layout_height="60dp"
-            android:layout_marginTop="630dp"
-            android:layout_marginLeft="9dp"
-            android:layout_marginRight="9dp"
-            android:background="@drawable/custom_button"
+            android:layout_marginLeft="4dp"
+            android:layout_marginTop="580dp"
+            android:layout_marginRight="4dp"
+            android:background="#00000000"
             android:text="Start"
-            android:textSize="20dp"/>
+            android:textColor="@color/black"
+            android:textSize="20dp"
+            android:textStyle="bold" />
+
         <org.osmdroid.views.MapView android:id="@+id/map"
             android:layout_width="match_parent"
-            android:layout_height="530dp"
-            android:layout_marginTop="90dp"/>
+            android:layout_height="600dp"
+            android:layout_marginTop="50dp"/>
 
-        <TextView
-            android:layout_width="150dp"
-            android:layout_height="80dp"
-            android:layout_marginLeft="30dp"
-            android:layout_marginTop="710dp"
-            android:background="@drawable/border_txt" />
-        <TextView
-            android:layout_width="150dp"
-            android:layout_height="80dp"
-            android:layout_marginLeft="230dp"
-            android:layout_marginTop="710dp"
-            android:background="@drawable/border_txt" />
     </RelativeLayout>
 </RelativeLayout>
