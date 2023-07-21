@@ -10,6 +10,7 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.content.Intent;
+import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.location.LocationListener;
@@ -43,6 +44,7 @@ import org.osmdroid.views.overlay.FolderOverlay;
 import org.osmdroid.views.overlay.MapEventsOverlay;
 import org.osmdroid.views.overlay.Marker;
 import org.osmdroid.views.overlay.Overlay;
+import org.osmdroid.views.overlay.OverlayManager;
 import org.osmdroid.views.overlay.Polyline;
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider;
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay;
@@ -60,19 +62,8 @@ public class MainActivity extends AppCompatActivity {
     ImageButton search_img;
     EditText search_bar;
     Button btn;
-    private static final String LOG_TAG = "a";
-    String address = "00:22:12:01:98:91";
-    private final int PERMISSIONS_REQUEST = 1;
-    private BluetoothAdapter myBluetooth = null;
-    private Set<BluetoothDevice> pairedDevices;
-    public static String EXTRA_ADDRESS = "device_address";
-    private ProgressDialog progress_bluetooth;
-    BluetoothAdapter myBluetooth2 = null;
-    BluetoothSocket btSocket = null;
-    private boolean isBtConnected = false;
-    static final UUID myUUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
     MapView map = null;
-    Timer timer = new Timer();
+
     List<GeoPoint> geoPointList = new ArrayList<>();
     Boolean isTracking = false;
     LocationManager locationManager;
@@ -91,18 +82,6 @@ public class MainActivity extends AppCompatActivity {
 
 
         super.onCreate(savedInstanceState);
-        requestBlePermissions(this,1);
-        myBluetooth = BluetoothAdapter.getDefaultAdapter();
-        new MainActivity.ConnectBT().execute();
-        if ( myBluetooth==null ) {
-            Toast.makeText(getApplicationContext(), "Bluetooth device not available", Toast.LENGTH_LONG).show();
-            finish();
-        }
-        else if ( !myBluetooth.isEnabled() ) {
-            Intent turnBTon = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-            startActivityForResult(turnBTon, 1);
-        }
-
         Configuration.getInstance().setUserAgentValue("osmbonuspack_6.9.0");
         setContentView(R.layout.activity_main);
 
@@ -118,10 +97,12 @@ public class MainActivity extends AppCompatActivity {
         map.getOverlays().add(mLocationOverlay);
         mLocationOverlay.enableFollowLocation();
         IMapController mapController = map.getController();
-        map.setBuiltInZoomControls(true);
+        map.setBuiltInZoomControls(false);
+        map.setFocusable(true);
         map.setMultiTouchControls(true);
+
         roadManager = new OSRMRoadManager(this, "osmbonuspack_6.9.0");
-        ((OSRMRoadManager)roadManager).setMean(OSRMRoadManager.MEAN_BY_BIKE);
+        ((OSRMRoadManager)roadManager).setMean(OSRMRoadManager.MEAN_BY_FOOT);
         // 16.064950099999997, 108.15898268465547
         locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
         lastKnownLoc = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
@@ -137,19 +118,18 @@ public class MainActivity extends AppCompatActivity {
             // tìm đường đi
 
             waypoints.add(location);
-
-
             // click vi tri
             MapEventsReceiver mReceive = new MapEventsReceiver() {
                 @Override
                 public boolean singleTapConfirmedHelper(GeoPoint p) {
-                    Toast.makeText(getBaseContext(),p.getLatitude() + " - "+p.getLongitude(),Toast.LENGTH_LONG).show();
+
 
                     return false;
                 }
 
                 @Override
                 public boolean longPressHelper(GeoPoint p) {
+                    Toast.makeText(getBaseContext(),p.getLatitude() + " - "+p.getLongitude(),Toast.LENGTH_LONG).show();
                     return false;
                 }
             };
@@ -210,7 +190,7 @@ public class MainActivity extends AppCompatActivity {
 
                     }
                 } catch (Exception e){
-                    Log.d("Djt me" , e.toString());
+                    Log.d("pppppp" , e.toString());
                 }
 
 
@@ -231,7 +211,7 @@ public class MainActivity extends AppCompatActivity {
             case MotionEvent.ACTION_UP:
                 x2 = touchEvent.getX();
                 y2 = touchEvent.getY();
-                if(x1 - 200 > x2){
+                if(x1 - 400 > x2){
 
                     Intent intent = new Intent(getApplicationContext(), specification.class);
                     intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
@@ -298,100 +278,16 @@ public class MainActivity extends AppCompatActivity {
     }
     private void updateLoc(Location loc){
         GeoPoint locGeoPoint = new GeoPoint(loc.getLatitude(), loc.getLongitude());
-
         waypoints.add(locGeoPoint);
         Road road = roadManager.getRoad(waypoints);
         Polyline roadOverlay = RoadManager.buildRoadOverlay(road);
+        roadOverlay.setWidth((float)10.0);
         map.getOverlays().add(roadOverlay);
         map.invalidate();
-    }
 
-    private class ConnectBT extends AsyncTask<Void, Void, Void> {
-        private boolean ConnectSuccess = true;
-
-        @Override
-        protected  void onPreExecute () {
-            progress_bluetooth = ProgressDialog.show(MainActivity.this, "Đang kết nối thiết bị", "Xin vui lòng đợi");
-        }
-
-        @Override
-        protected Void doInBackground (Void... devices) {
-            try {
-                if ( btSocket==null || !isBtConnected ) {
-                    myBluetooth = BluetoothAdapter.getDefaultAdapter();
-                    BluetoothDevice dispositivo = myBluetooth.getRemoteDevice(address);
-                    btSocket = dispositivo.createInsecureRfcommSocketToServiceRecord(myUUID);
-                    BluetoothAdapter.getDefaultAdapter().cancelDiscovery();
-                    btSocket.connect();
-                }
-            } catch (IOException e) {
-                ConnectSuccess = false;
-            }
-
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute (Void result) {
-            super.onPostExecute(result);
-
-            if (!ConnectSuccess) {
-                //msg("Connection Failed. Is it a SPP Bluetooth? Try again.");
-                finish();
-            } else {
-                msg("Connected");
-                isBtConnected = true;
-                timer.start();
-
-            }
-
-            progress_bluetooth.dismiss();
-        }
     }
     private void msg (String s) {
         Toast.makeText(getApplicationContext(), s, Toast.LENGTH_LONG).show();
     }
-    public static void requestBlePermissions(Activity activity, int requestCode) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
-            ActivityCompat.requestPermissions(activity, ANDROID_12_BLE_PERMISSIONS, requestCode);
-        else
-            ActivityCompat.requestPermissions(activity, BLE_PERMISSIONS, requestCode);
-    }
-    private static final String[] BLE_PERMISSIONS = new String[]{
-            android.Manifest.permission.ACCESS_COARSE_LOCATION,
-            android.Manifest.permission.ACCESS_FINE_LOCATION,
-    };
 
-    private static final String[] ANDROID_12_BLE_PERMISSIONS = new String[]{
-            android.Manifest.permission.BLUETOOTH_SCAN,
-            android.Manifest.permission.BLUETOOTH_CONNECT,
-            Manifest.permission.ACCESS_FINE_LOCATION,
-    };
-
-    public class Timer extends Thread {
-        public void run(){
-            while (true){
-                InputStream inputStream = null;
-                try {
-                    inputStream = btSocket.getInputStream();
-                    inputStream.skip(inputStream.available());
-                    byte[] result = new byte[8];
-                    for (int i = 0; i < 8; i++) {
-
-                        byte b = (byte) inputStream.read();
-                        result[i] = b;
-                    }
-                    String str = new String(result);
-                    if(str!=null) {
-                        Log.d("hieuhieu" , str);
-                    }
-
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
-            }
-
-        }
-    }
 }
