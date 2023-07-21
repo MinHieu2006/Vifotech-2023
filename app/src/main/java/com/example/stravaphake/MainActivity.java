@@ -61,7 +61,7 @@ public class MainActivity extends AppCompatActivity {
     EditText search_bar;
     Button btn;
     private static final String LOG_TAG = "a";
-    String address = "00:22:12:01:93:8E";
+    String address = "00:22:12:01:98:91";
     private final int PERMISSIONS_REQUEST = 1;
     private BluetoothAdapter myBluetooth = null;
     private Set<BluetoothDevice> pairedDevices;
@@ -72,7 +72,6 @@ public class MainActivity extends AppCompatActivity {
     private boolean isBtConnected = false;
     static final UUID myUUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
     MapView map = null;
-    ConnectThread thread;
     Timer timer = new Timer();
     List<GeoPoint> geoPointList = new ArrayList<>();
     Boolean isTracking = false;
@@ -84,6 +83,7 @@ public class MainActivity extends AppCompatActivity {
     LocationManager mLocationManager;
     List<String> list = new ArrayList<String>();
     float x1,x2,y1,y2;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
@@ -91,20 +91,23 @@ public class MainActivity extends AppCompatActivity {
 
 
         super.onCreate(savedInstanceState);
-//        requestBlePermissions(this,1);
-//        myBluetooth = BluetoothAdapter.getDefaultAdapter();
-//        new MainActivity.ConnectBT().execute();
-//        if ( myBluetooth==null ) {
-//            Toast.makeText(getApplicationContext(), "Bluetooth device not available", Toast.LENGTH_LONG).show();
-//            finish();
-//        }
-//        else if ( !myBluetooth.isEnabled() ) {
-//            Intent turnBTon = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-//            startActivityForResult(turnBTon, 1);
-//        }
+        requestBlePermissions(this,1);
+        myBluetooth = BluetoothAdapter.getDefaultAdapter();
+        new MainActivity.ConnectBT().execute();
+        if ( myBluetooth==null ) {
+            Toast.makeText(getApplicationContext(), "Bluetooth device not available", Toast.LENGTH_LONG).show();
+            finish();
+        }
+        else if ( !myBluetooth.isEnabled() ) {
+            Intent turnBTon = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+            startActivityForResult(turnBTon, 1);
+        }
 
         Configuration.getInstance().setUserAgentValue("osmbonuspack_6.9.0");
         setContentView(R.layout.activity_main);
+
+
+
         search_img = (ImageButton) findViewById(R.id.search_destination);
         search_bar = (EditText) findViewById(R.id.search_bar);
         btn = (Button) findViewById(R.id.tracking);
@@ -228,10 +231,13 @@ public class MainActivity extends AppCompatActivity {
             case MotionEvent.ACTION_UP:
                 x2 = touchEvent.getX();
                 y2 = touchEvent.getY();
-                if(x1 > x2){
-                    Intent intent = new Intent(MainActivity.this, specification.class);
+                if(x1 - 200 > x2){
+
+                    Intent intent = new Intent(getApplicationContext(), specification.class);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
                     startActivity(intent);
                     overridePendingTransition(R.anim.slide_in_right,R.anim.stay);
+
                 }
                 break;
         }
@@ -330,12 +336,12 @@ public class MainActivity extends AppCompatActivity {
             super.onPostExecute(result);
 
             if (!ConnectSuccess) {
-                msg("Connection Failed. Is it a SPP Bluetooth? Try again.");
+                //msg("Connection Failed. Is it a SPP Bluetooth? Try again.");
                 finish();
             } else {
                 msg("Connected");
                 isBtConnected = true;
-                //timer.run();
+                timer.start();
 
             }
 
@@ -361,32 +367,29 @@ public class MainActivity extends AppCompatActivity {
             android.Manifest.permission.BLUETOOTH_CONNECT,
             Manifest.permission.ACCESS_FINE_LOCATION,
     };
-    public void hold_on(){
-        try {
-            timer.wait(1000);
-        }catch (Exception e){
-            e.toString();
-        }
-    }
+
     public class Timer extends Thread {
         public void run(){
-            InputStream inputStream = null;
-            try {
-                inputStream = btSocket.getInputStream();
-                inputStream.skip(inputStream.available());
-                byte[] result = new byte[26];
-                for (int i = 0; i < 26; i++) {
+            while (true){
+                InputStream inputStream = null;
+                try {
+                    inputStream = btSocket.getInputStream();
+                    inputStream.skip(inputStream.available());
+                    byte[] result = new byte[8];
+                    for (int i = 0; i < 8; i++) {
 
-                    byte b = (byte) inputStream.read();
-                    result[i] = b;
-                }
-                String str = new String(result);
-                if(str!=null) {
-                    Log.d("hieuhieu" , str);
+                        byte b = (byte) inputStream.read();
+                        result[i] = b;
+                    }
+                    String str = new String(result);
+                    if(str!=null) {
+                        Log.d("hieuhieu" , str);
+                    }
+
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
 
-            } catch (IOException e) {
-                e.printStackTrace();
             }
 
         }

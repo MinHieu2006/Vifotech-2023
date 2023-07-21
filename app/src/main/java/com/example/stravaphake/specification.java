@@ -22,8 +22,9 @@ public class specification extends AppCompatActivity {
             case MotionEvent.ACTION_UP:
                 x2 = touchEvent.getX();
                 y2 = touchEvent.getY();
-                if(x1 < x2){
-                    Intent intent = new Intent(specification.this, MainActivity.class);
+                if(x1 < x2 - 200){
+                    Intent intent = new Intent(getApplicationContext(), MainActivity.class);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
                     startActivity(intent);
                     overridePendingTransition(R.anim.slide_in_left,R.anim.stay);
                 }
